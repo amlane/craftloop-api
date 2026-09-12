@@ -4,12 +4,12 @@ module.exports = {
   add,
   find,
   findBy,
-  findById
+  findById,
 };
 
 // Public listing — never expose the password hash.
 function find() {
-  return db("users").select("id", "username");
+  return db("users").select("id", "username", "email");
 }
 
 // Used for auth; returns the full row including the password hash.
@@ -25,8 +25,5 @@ async function add(user) {
 }
 
 function findById(id) {
-  return db("users")
-    .where({ id })
-    .select("id", "username")
-    .first();
+  return db("users").where({ id }).select("id", "username", "email").first();
 }

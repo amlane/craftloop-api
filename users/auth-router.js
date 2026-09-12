@@ -10,21 +10,31 @@ const BCRYPT_ROUNDS = 12;
 // for endpoints beginning with /api/auth
 router.post("/register", validateUserContent, async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { email, username, password } = req.body;
     const hash = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
-    const saved = await Users.add({ username, password: hash });
+    const existingEmail = await Users.findBy({ email }).first();
+    if (existingEmail) {
+      return res
+        .status(409)
+        .json({ message: `Account with email already exists.` });
+    }
+    const existingUsername = await Users.findBy({ username }).first();
+    if (existingUsername) {
+      return res
+        .status(409)
+        .json({ message: `Account with username already exists.` });
+    }
+
+    const saved = await Users.add({ email, username, password: hash });
     const token = generateToken(saved);
 
     res.status(201).json({
       user: saved,
-      message: `Welcome, ${saved.username}`,
-      token
+      message: `Account successfully created. Username: ${saved.username}`,
+      token,
     });
   } catch (error) {
-    if (error.code === "SQLITE_CONSTRAINT" || error.code === "SQLITE_CONSTRAINT_UNIQUE") {
-      return res.status(409).json({ message: "Username is already taken" });
-    }
     res.status(500).json({ message: "Failed to register user" });
   }
 });
@@ -39,8 +49,8 @@ router.post("/login", validateUserContent, async (req, res) => {
 
       res.status(200).json({
         user: { id: user.id, username: user.username },
-        message: `Welcome back, ${user.username}`,
-        token
+        message: `Successful login for user: ${user.username}`,
+        token,
       });
     } else {
       res.status(401).json({ message: "Invalid Username or Password" });
@@ -55,10 +65,11 @@ router.post("/login", validateUserContent, async (req, res) => {
 function generateToken(user) {
   const payload = {
     subject: user.id, // standard claim = sub
-    username: user.username
+    username: user.username,
+    email: user.email,
   };
   const options = {
-    expiresIn: "7d"
+    expiresIn: "7d",
   };
   return jwt.sign(payload, secrets.jwtSecret, options);
 }
