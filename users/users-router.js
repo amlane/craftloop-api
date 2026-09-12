@@ -6,6 +6,9 @@ const restricted = require("../middleware/restricted-middleware.js");
 // All user data requires a valid token.
 router.use(restricted);
 
+// ---------------------- GET Self using JWT ---------------------- //
+// TO DO - Restrict to users with admin role
+
 router.get("/", (req, res) => {
   Users.find()
     .then((users) => {
@@ -15,6 +18,8 @@ router.get("/", (req, res) => {
       res.status(500).json({ message: "Failed to retrieve users" });
     });
 });
+
+// ---------------------- GET Self using JWT ---------------------- //
 
 router.get("/me", (req, res) => {
   Users.findById(req.decodedToken.subject)
@@ -31,8 +36,23 @@ router.get("/me", (req, res) => {
     });
 });
 
+// ---------------------- GET basic details about User by User Id ---------------------- //
+
 router.get("/:id", verifyUserId, (req, res) => {
   res.status(200).json(req.user);
+});
+
+// ---------------------- GET Patterns By User Id ---------------------- //
+
+router.get("/:id/patterns", verifyUserId, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const user = await Users.findById(id);
+    user.patterns = await Users.getPatternsByUserId(id);
+    res.status(200).json({ user });
+  } catch (error) {
+    res.status(500).json({ error });
+  }
 });
 
 // ---------------------- Custom Middleware ---------------------- //

@@ -5,6 +5,7 @@ module.exports = {
   find,
   findBy,
   findById,
+  getPatternsByUserId,
 };
 
 // Public listing — never expose the password hash.
@@ -26,4 +27,8 @@ async function add(user) {
 
 function findById(id) {
   return db("users").where({ id }).select("id", "username", "email").first();
+}
+
+function getPatternsByUserId(id) {
+  return db("patterns").where({ user_id: id });
 }
