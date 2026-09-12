@@ -8,11 +8,26 @@ router.use(restricted);
 
 router.get("/", (req, res) => {
   Users.find()
-    .then(users => {
+    .then((users) => {
       res.status(200).json(users);
     })
-    .catch(err => {
+    .catch((err) => {
       res.status(500).json({ message: "Failed to retrieve users" });
+    });
+});
+
+router.get("/me", (req, res) => {
+  Users.findById(req.decodedToken.subject)
+    .then((user) => {
+      if (user) {
+        req.user = user;
+        res.status(200).json(user);
+      } else {
+        res.status(404).json({ message: "User Not Found." });
+      }
+    })
+    .catch((err) => {
+      res.status(500).json({ message: "Failed to retrieve user" });
     });
 });
 
@@ -24,7 +39,7 @@ router.get("/:id", verifyUserId, (req, res) => {
 
 function verifyUserId(req, res, next) {
   Users.findById(req.params.id)
-    .then(user => {
+    .then((user) => {
       if (user) {
         req.user = user;
         next();
@@ -32,7 +47,7 @@ function verifyUserId(req, res, next) {
         res.status(404).json({ message: "User Not Found." });
       }
     })
-    .catch(err => {
+    .catch((err) => {
       res.status(500).json({ message: "Failed to retrieve user" });
     });
 }
