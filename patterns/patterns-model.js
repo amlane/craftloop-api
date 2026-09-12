@@ -1,9 +1,23 @@
 const db = require("../data/dbConfig.js");
 
 module.exports = {
-  add,
+  find,
+  findBy,
   findById,
+  add,
 };
+
+function find() {
+  return db("patterns").select("*");
+}
+
+function findBy(filter) {
+  return db("patterns").where(filter);
+}
+
+function findById(id) {
+  return db("patterns").where({ id }).select("*").first();
+}
 
 async function add(pattern) {
   const [inserted] = await db("patterns").insert(pattern).returning("id");
@@ -12,6 +26,4 @@ async function add(pattern) {
   return findById(id);
 }
 
-function findById(id) {
-  return db("patterns").where({ id }).select("*").first();
-}
+// TO DO: Delete + Update

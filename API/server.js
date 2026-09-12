@@ -5,6 +5,7 @@ const rateLimit = require("express-rate-limit");
 
 const authRouter = require("../users/auth-router.js");
 const usersRouter = require("../users/users-router.js");
+const patternsRouter = require("../patterns/patterns-router.js");
 
 const server = express();
 
@@ -19,11 +20,12 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many attempts, please try again later." },
-  skip: () => process.env.NODE_ENV === "test"
+  skip: () => process.env.NODE_ENV === "test",
 });
 
 server.use("/api/auth", authLimiter, authRouter);
 server.use("/api/users", usersRouter);
+server.use("/api/patterns", patternsRouter);
 
 server.get("/", (req, res) => {
   res.send("It's alive!");

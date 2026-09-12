@@ -32,3 +32,5 @@ function findById(id) {
 function getPatternsByUserId(id) {
   return db("patterns").where({ user_id: id });
 }
+
+// TO DO: Delete/Update user account
