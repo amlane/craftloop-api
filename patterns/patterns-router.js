@@ -25,12 +25,15 @@ router.post("/", (req, res) => {
 
   pattern.sections = JSON.stringify(pattern.sections);
   pattern.tags = JSON.stringify(pattern.tags);
+  const photos = pattern.photos; // TO DO - handle photos update separately once storage strategy is decided
+  delete pattern.photos; // remove from request to avoid table constraint for invalid table column
 
   Patterns.add(pattern)
     .then((newPattern) => {
       res.status(201).json({ newPattern });
     })
     .catch((err) => {
+      console.log(err);
       res.status(500).json(err);
     });
 });
