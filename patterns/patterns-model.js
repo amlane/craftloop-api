@@ -5,6 +5,8 @@ module.exports = {
   findBy,
   findById,
   add,
+  update,
+  remove,
 };
 
 function find() {
@@ -26,4 +28,12 @@ async function add(pattern) {
   return findById(id);
 }
 
-// TO DO: Delete + Update
+async function update(id, changes) {
+  await db("patterns").where({ id }).update(changes);
+
+  return findById(id);
+}
+
+function remove(id) {
+  return db("patterns").where({ id }).del();
+}
