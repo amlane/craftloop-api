@@ -3,6 +3,8 @@ const request = require("supertest");
 const server = require("../API/server.js");
 const db = require("../data/dbConfig.js");
 
+// TODO: Postgres DB doesn't auto-reset between runs the way :memory: did, your test setup will need an explicit reset strategy (e.g. rollback+re-migrate, or truncate tables, in a beforeAll/beforeEach).
+
 beforeAll(async () => {
   await db.migrate.latest();
 });
@@ -23,7 +25,10 @@ describe("POST /api/auth/register", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.token).toBeTypeOf("string");
-    expect(res.body.user).toEqual({ id: expect.any(Number), username: "alice" });
+    expect(res.body.user).toEqual({
+      id: expect.any(Number),
+      username: "alice",
+    });
     expect(res.body.user).not.toHaveProperty("password");
   });
 

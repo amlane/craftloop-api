@@ -4,7 +4,7 @@
  */
 exports.seed = async function (knex) {
   // Deletes ALL existing entries
-  await knex("patterns").del();
+  await knex.raw("TRUNCATE TABLE patterns RESTART IDENTITY CASCADE");
   await knex("patterns").insert([
     {
       title: "Seed Pattern 1",
@@ -15,8 +15,8 @@ exports.seed = async function (knex) {
       hook: "I/9 (6.0mm)",
       gauge: "4 rows of dc = 4 inches",
       finishedSize: "21 inches x 42 inches",
-      tags: JSON.stringify(["accessories", "fashion", "scarf"]),
-      sections: JSON.stringify([]),
+      tags: '["accessories", "fashion", "scarf"]',
+      sections: "[]",
       notes: "This is seed data.",
       user_id: 1,
     },

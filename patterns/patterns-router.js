@@ -23,8 +23,6 @@ router.post("/", (req, res) => {
   const decoded = req.decodedToken.subject;
   pattern.user_id = decoded;
 
-  pattern.sections = JSON.stringify(pattern.sections);
-  pattern.tags = JSON.stringify(pattern.tags);
   const photos = pattern.photos; // TO DO - handle photos update separately once storage strategy is decided
   delete pattern.photos; // remove from request to avoid table constraint for invalid table column
 

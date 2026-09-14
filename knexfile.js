@@ -3,42 +3,33 @@
 
 require("dotenv").config({ quiet: true });
 
-const sharedSqliteOptions = {
-  client: "better-sqlite3",
-  useNullAsDefault: true,
-  pool: {
-    afterCreate: (conn, done) => {
-      conn.pragma("foreign_keys = ON");
-      done();
-    }
-  },
+const sharedPgOptions = {
+  client: "pg",
   migrations: {
-    directory: "./data/migrations"
+    directory: "./data/migrations",
   },
   seeds: {
-    directory: "./data/seeds"
-  }
+    directory: "./data/seeds",
+  },
 };
 
 module.exports = {
   development: {
-    ...sharedSqliteOptions,
-    connection: {
-      filename: process.env.DATABASE_FILE || "./data/auth.db3"
-    }
+    ...sharedPgOptions,
+    connection: process.env.DATABASE_URL_LOCAL,
   },
 
   test: {
-    ...sharedSqliteOptions,
-    connection: {
-      filename: ":memory:"
-    }
+    ...sharedPgOptions,
+    connection: process.env.DATABASE_URL_TEST,
   },
 
   production: {
-    ...sharedSqliteOptions,
-    connection: {
-      filename: process.env.DATABASE_FILE || "./data/auth.db3"
-    }
-  }
+    ...sharedPgOptions,
+    connection: process.env.DATABASE_URL_LOCAL,
+  },
 };
+
+/*
+Note: Many managed Postgres providers require SSL on the connection (ssl: { rejectUnauthorized: false } or similar) or the connection gets refused. Not a concern for local Docker, so no action needed yet but may come up during prod deployment.
+*/

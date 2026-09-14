@@ -3,12 +3,12 @@
  * @returns { Promise<void> }
  * 
  * Data Schema
- 		title: STRING, (default: "Untitled Pattern")
+ 		title: STRING,
 		status: ENUM ('draft', 'tested', 'done')
 		yarnBrand: STRING,
 		yarnColorway: STRING,
-		yarnWeight: Default: WEIGHTS[4] ENUM(['Lace (0)','Super Fine (1)','Fine (2)','Light (3)','Medium / Worsted (4)','Bulky (5)','Super Bulky (6)','Jumbo (7)']),
-		hook: STRING, (this could be a dropdown in the future with all possible hook sizes - leave unopinionated for now)
+		yarnWeight: Default: ENUM(['Lace (0)','Super Fine (1)','Fine (2)','Light (3)','Medium / Worsted (4)','Bulky (5)','Super Bulky (6)','Jumbo (7)']),
+		hook: STRING,
 		gauge: STRING,
 		finishedSize: STRING,
 		tags: JSON array of strings, stored as a json column (dedupe handled in the model layer, not the DB)
@@ -38,8 +38,9 @@ exports.up = function (knex) {
     patterns.string("finishedSize", 128);
     patterns.string("notes", 3000);
 
-    patterns.json("tags").notNullable().defaultTo("[]");
-    patterns.json("sections").notNullable().defaultTo("[]");
+    // .jsonb(...) vs .json(...): Postgres jsonb allows you to query or index into these columns
+    patterns.jsonb("tags").notNullable().defaultTo("[]");
+    patterns.jsonb("sections").notNullable().defaultTo("[]");
 
     patterns
       .enum("yarnWeight", [
