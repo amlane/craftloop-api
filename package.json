@@ -1,7 +1,7 @@
 {
   "name": "single-sized-bytes-api",
   "version": "1.0.0",
-  "description": "Node.js/Express boilerplate with JWT authentication over a Knex + SQLite database",
+  "description": "Node.js/Express boilerplate with JWT authentication over a Knex + Pg database",
   "main": "index.js",
   "engines": {
     "node": ">=20"
@@ -18,7 +18,7 @@
     "express",
     "jwt",
     "knex",
-    "sqlite",
+    "postgres",
     "boilerplate"
   ],
   "author": "Amanda Lane",

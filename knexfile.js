@@ -26,7 +26,7 @@ module.exports = {
 
   production: {
     ...sharedPgOptions,
-    connection: process.env.DATABASE_URL_LOCAL,
+    connection: process.env.DATABASE_URL_PROD,
   },
 };
 
