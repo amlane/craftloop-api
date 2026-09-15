@@ -66,6 +66,8 @@ router.put("/:id", (req, res) => {
   if ("sections" in changes)
     changes.sections = JSON.stringify(changes.sections);
 
+  // TODO - make sure photos are handled properly once feature is enabled
+
   Patterns.update(id, changes)
     .then((updatedPattern) => {
       res.status(201).json(updatedPattern);
@@ -75,16 +77,21 @@ router.put("/:id", (req, res) => {
     });
 });
 
-router.delete("/:id", (req, res) => {
+router.delete("/:id", async (req, res) => {
   const id = req.params.id;
-
-  Patterns.remove(id)
-    .then((pattern) => {
-      res.status(204).json(pattern);
-    })
-    .catch((err) => {
-      res.status(500).json(err);
-    });
+  const decoded = req.decodedToken.subject;
+  const pattern = await Patterns.findById(id);
+  if (pattern.user_id === decoded || decoded === 1) {
+    Patterns.remove(id)
+      .then((pattern) => {
+        res.status(204).json(pattern);
+      })
+      .catch((err) => {
+        res.status(500).json(err);
+      });
+  } else {
+    res.status(401).json({ message: "Unauthorized Action." });
+  }
 });
 
 // ---------------------- Custom Middleware ---------------------- //
