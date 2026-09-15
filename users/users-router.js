@@ -46,10 +46,17 @@ router.get("/:id", verifyUserId, (req, res) => {
 
 router.get("/:id/patterns", verifyUserId, async (req, res) => {
   try {
+    const permittedUser = req.decodedToken.subject;
     const id = req.params.id;
-    const user = await Users.findById(id);
+    const user = req.user;
     user.patterns = await Users.getPatternsByUserId(id);
-    res.status(200).json({ user });
+    if (user.id === permittedUser || permittedUser === 1) {
+      res.status(200).json({ user });
+    } else {
+      res
+        .status(401)
+        .json({ message: "Not authorized to view this user's pattern." });
+    }
   } catch (error) {
     res.status(500).json({ error });
   }
