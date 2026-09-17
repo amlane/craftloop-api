@@ -57,7 +57,6 @@ router.post("/", (req, res) => {
       res.status(201).json(newPattern);
     })
     .catch((err) => {
-      console.log(err);
       res.status(500).json(err);
     });
 });
