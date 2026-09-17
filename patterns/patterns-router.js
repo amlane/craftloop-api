@@ -22,7 +22,11 @@ router.get("/:id", (req, res) => {
   const permittedUser = req.decodedToken.subject;
   Patterns.findById(req.params.id)
     .then((pattern) => {
-      if (pattern.user_id === permittedUser || permittedUser === 1) {
+      if (pattern === undefined) {
+        res
+          .status(404)
+          .json({ message: `Pattern ${req.params.id} not found.` });
+      } else if (pattern.user_id === permittedUser || permittedUser === 1) {
         res.status(200).json(pattern);
       } else {
         res
