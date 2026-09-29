@@ -1,4 +1,5 @@
 const db = require("../data/dbConfig.js");
+const Patterns = require("../patterns/patterns-model.js");
 
 module.exports = {
   add,
@@ -29,8 +30,9 @@ function findById(id) {
   return db("users").where({ id }).select("id", "username", "email").first();
 }
 
-function getPatternsByUserId(id) {
-  return db("patterns").where({ user_id: id });
+async function getPatternsByUserId(id) {
+  const patterns = await db("patterns").where({ user_id: id });
+  return Patterns.attachChildren(patterns);
 }
 
 // TO DO: Delete/Update user account

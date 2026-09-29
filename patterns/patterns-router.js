@@ -2,6 +2,10 @@ const router = require("express").Router();
 
 const Patterns = require("./patterns-model.js");
 const restricted = require("../middleware/restricted-middleware.js");
+const {
+  createPatternSchema,
+  updatePatternSchema,
+} = require("./pattern-schemas.js");
 
 // All user data requires a valid token.
 router.use(restricted);
@@ -42,15 +46,24 @@ router.get("/:id", (req, res) => {
 });
 
 router.post("/", (req, res) => {
-  let pattern = req.body;
+  const parsed = createPatternSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res
+      .status(400)
+      .json({
+        message: "Invalid pattern payload",
+        errors: parsed.error.flatten(),
+      });
+  }
+
+  const pattern = parsed.data;
   const decoded = req.decodedToken.subject;
   pattern.user_id = decoded;
 
-  pattern.tags = JSON.stringify(pattern.tags);
-  pattern.sections = JSON.stringify(pattern.sections);
+  pattern.tags = JSON.stringify(pattern.tags ?? []);
+  pattern.sections = JSON.stringify(pattern.sections ?? []);
 
-  const photos = pattern.photos; // TO DO - handle photos update separately once storage strategy is decided
-  delete pattern.photos; // remove from request to avoid table constraint for invalid table column
+  delete pattern.photos; // TO DO - handle photos separately once storage strategy is decided
 
   Patterns.add(pattern)
     .then((newPattern) => {
@@ -63,13 +76,23 @@ router.post("/", (req, res) => {
 
 router.put("/:id", (req, res) => {
   const id = req.params.id;
-  const changes = req.body;
+  const parsed = updatePatternSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res
+      .status(400)
+      .json({
+        message: "Invalid pattern payload",
+        errors: parsed.error.flatten(),
+      });
+  }
+
+  const changes = parsed.data;
 
   if ("tags" in changes) changes.tags = JSON.stringify(changes.tags);
   if ("sections" in changes)
     changes.sections = JSON.stringify(changes.sections);
 
-  // TODO - make sure photos are handled properly once feature is enabled
+  delete changes.photos; // TODO - make sure photos are handled properly once feature is enabled
 
   Patterns.update(id, changes)
     .then((updatedPattern) => {
