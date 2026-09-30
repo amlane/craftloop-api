@@ -19,11 +19,14 @@ async function attachChildren(patterns) {
   const ids = list.filter(Boolean).map((p) => p.id);
   if (!ids.length) return patterns;
 
-  const [yarns, supplies] = await Promise.all([
+  const [yarns, supplies, photos] = await Promise.all([
     db("pattern_yarns")
       .whereIn("pattern_id", ids)
       .orderBy(["pattern_id", "position"]),
     db("pattern_supplies")
+      .whereIn("pattern_id", ids)
+      .orderBy(["pattern_id", "position"]),
+    db("pattern_photos")
       .whereIn("pattern_id", ids)
       .orderBy(["pattern_id", "position"]),
   ]);
@@ -32,6 +35,7 @@ async function attachChildren(patterns) {
     if (!pattern) continue;
     pattern.yarns = yarns.filter((y) => y.pattern_id === pattern.id);
     pattern.supplies = supplies.filter((s) => s.pattern_id === pattern.id);
+    pattern.photos = photos.filter((p) => p.pattern_id === pattern.id);
   }
 
   return patterns;

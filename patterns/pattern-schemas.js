@@ -80,9 +80,14 @@ const patternFields = {
 const createPatternSchema = z.object(patternFields);
 const updatePatternSchema = z.object(patternFields);
 
+const photoCaptionSchema = z.object({
+  caption: z.string().trim().max(255).optional().nullable(),
+});
+
 module.exports = {
   createPatternSchema,
   updatePatternSchema,
+  photoCaptionSchema,
   STATUSES,
   YARN_WEIGHTS,
   SUPPLY_TYPES,
