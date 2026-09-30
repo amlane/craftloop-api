@@ -8,19 +8,15 @@
  *     pattern_id: FK -> patterns.id, cascades on delete
  *     colorway: STRING, optional, e.g. "Navy Blue"
  *     brand: STRING, optional, e.g. "I Love This Yarn"
- *     weight: ENUM, optional - same scale as the old patterns.yarnWeight column
+ *     weight: ENUM, optional
  *     position: INTEGER - display order within the pattern
  *
  *   pattern_supplies - one row per supply/notion used in a pattern (hook,
- *     yarn needle, scissors, stitch markers, safety eyes, etc.). Replaces the
- *     old single patterns.hook column.
+ *     yarn needle, scissors, stitch markers, safety eyes, etc.)
  *     pattern_id: FK -> patterns.id, cascades on delete
  *     supply_type: ENUM, one of a fixed set of supply categories
  *     detail: STRING, optional, e.g. "H-8 (5.0mm)" or "size 10 steel"
  *     position: INTEGER - display order within the pattern
- *
- *   Existing patterns.yarnBrand / yarnColorway / yarnWeight / hook data is
- *   migrated into the new tables below, then those columns are dropped.
  */
 
 const YARN_WEIGHTS = [
@@ -84,43 +80,6 @@ exports.up = async function (knex) {
 
     supplies.timestamps(true, true, true);
   });
-
-  const existingPatterns = await knex("patterns").select(
-    "id",
-    "yarnBrand",
-    "yarnColorway",
-    "yarnWeight",
-    "hook",
-  );
-
-  const yarnRows = existingPatterns
-    .filter((p) => p.yarnBrand || p.yarnColorway || p.yarnWeight)
-    .map((p) => ({
-      pattern_id: p.id,
-      colorway: p.yarnColorway || null,
-      brand: p.yarnBrand || null,
-      weight: p.yarnWeight || null,
-      position: 0,
-    }));
-
-  const supplyRows = existingPatterns
-    .filter((p) => p.hook)
-    .map((p) => ({
-      pattern_id: p.id,
-      supply_type: "hook",
-      detail: p.hook,
-      position: 0,
-    }));
-
-  if (yarnRows.length) await knex("pattern_yarns").insert(yarnRows);
-  if (supplyRows.length) await knex("pattern_supplies").insert(supplyRows);
-
-  await knex.schema.alterTable("patterns", (patterns) => {
-    patterns.dropColumn("yarnBrand");
-    patterns.dropColumn("yarnColorway");
-    patterns.dropColumn("yarnWeight");
-    patterns.dropColumn("hook");
-  });
 };
 
 /**
@@ -128,16 +87,6 @@ exports.up = async function (knex) {
  * @returns { Promise<void> }
  */
 exports.down = async function (knex) {
-  await knex.schema.alterTable("patterns", (patterns) => {
-    patterns.string("yarnBrand", 128);
-    patterns.string("yarnColorway", 128);
-    patterns.string("hook", 128);
-    patterns
-      .enum("yarnWeight", YARN_WEIGHTS)
-      .notNullable()
-      .defaultTo("Medium / Worsted (4)");
-  });
-
   await knex.schema.dropTableIfExists("pattern_supplies");
   await knex.schema.dropTableIfExists("pattern_yarns");
 };
