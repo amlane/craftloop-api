@@ -8,6 +8,8 @@ module.exports = {
   findById,
   getPatternsByUserId,
   updateRole,
+  updatePassword,
+  remove,
 };
 
 // Admin-only listing (see requireAdmin on GET /) — never expose the
@@ -45,4 +47,11 @@ async function updateRole(id, role) {
   return findById(id);
 }
 
-// TO DO: Delete/Update user account (password change, account deletion)
+async function updatePassword(id, passwordHash) {
+  await db("users").where({ id }).update({ password: passwordHash });
+}
+
+function remove(id) {
+  // patterns (and their yarns/supplies/photos) cascade-delete with the user
+  return db("users").where({ id }).del();
+}

@@ -2,6 +2,7 @@ const db = require("../data/dbConfig.js");
 
 module.exports = {
   findByPatternId,
+  findByUserId,
   findById,
   add,
   updateCaption,
@@ -12,6 +13,16 @@ function findByPatternId(patternId) {
   return db("pattern_photos")
     .where({ pattern_id: patternId })
     .orderBy("position");
+}
+
+// Used to clean up Cloudinary assets before a user's account (and its
+// patterns, cascade-deleted) is removed - the FK cascade only cleans up DB
+// rows, not the remote Cloudinary assets.
+function findByUserId(userId) {
+  return db("pattern_photos")
+    .join("patterns", "pattern_photos.pattern_id", "patterns.id")
+    .where("patterns.user_id", userId)
+    .select("pattern_photos.id", "pattern_photos.public_id");
 }
 
 function findById(id) {
