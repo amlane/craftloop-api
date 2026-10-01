@@ -7,6 +7,8 @@ exports.up = function (knex) {
     users.string("password", 128).notNullable();
 
     users.string("email", 300).notNullable().unique();
+
+    users.enum("role", ["user", "admin"]).notNullable().defaultTo("user");
   });
 };
 

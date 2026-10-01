@@ -5,6 +5,8 @@ const Patterns = require("./patterns-model.js");
 const PatternPhotos = require("./pattern-photos-model.js");
 const cloudinary = require("../config/cloudinary.js");
 const restricted = require("../middleware/restricted-middleware.js");
+const loadCurrentUser = require("../middleware/current-user-middleware.js");
+const requireAdmin = require("../middleware/require-admin-middleware.js");
 const {
   createPatternSchema,
   updatePatternSchema,
@@ -24,12 +26,15 @@ const upload = multer({
   },
 });
 
-// All user data requires a valid token.
-router.use(restricted);
+// All user data requires a valid token. loadCurrentUser additionally fetches
+// the requester's own row (role included) fresh on every request.
+router.use(restricted, loadCurrentUser);
 
 // TODO - Add pagination strategy
-// TODO - add role column to users table
-router.get("/", (req, res) => {
+
+// Unfiltered list of every pattern across every user - admin only. Regular
+// users list their own via GET /api/users/:id/patterns.
+router.get("/", requireAdmin, (req, res) => {
   Patterns.find()
     .then((patterns) => {
       res.status(200).json(patterns);
@@ -39,27 +44,8 @@ router.get("/", (req, res) => {
     });
 });
 
-router.get("/:id", (req, res) => {
-  const permittedUser = req.decodedToken.subject;
-  Patterns.findById(req.params.id)
-    .then((pattern) => {
-      if (pattern === undefined) {
-        res
-          .status(404)
-          .json({ message: `Pattern ${req.params.id} not found.` });
-      } else if (pattern.user_id === permittedUser || permittedUser === 1) {
-        res.status(200).json(pattern);
-      } else {
-        res
-          .status(401)
-          .json({ message: "Not authorized to view this pattern." });
-      }
-    })
-    .catch((err) => {
-      res.status(500).json({
-        message: `Failed to retrieve pattern by ID: ${req.params.id}`,
-      });
-    });
+router.get("/:id", verifyPatternOwner, (req, res) => {
+  res.status(200).json(req.pattern);
 });
 
 router.post("/", (req, res) => {
@@ -72,8 +58,7 @@ router.post("/", (req, res) => {
   }
 
   const pattern = parsed.data;
-  const decoded = req.decodedToken.subject;
-  pattern.user_id = decoded;
+  pattern.user_id = req.currentUser.id;
 
   pattern.tags = JSON.stringify(pattern.tags ?? []);
   pattern.sections = JSON.stringify(pattern.sections ?? []);
@@ -89,7 +74,7 @@ router.post("/", (req, res) => {
     });
 });
 
-router.put("/:id", (req, res) => {
+router.put("/:id", verifyPatternOwner, (req, res) => {
   const id = req.params.id;
   const parsed = updatePatternSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -116,21 +101,14 @@ router.put("/:id", (req, res) => {
     });
 });
 
-router.delete("/:id", async (req, res) => {
-  const id = req.params.id;
-  const decoded = req.decodedToken.subject;
-  const pattern = await Patterns.findById(id);
-  if (pattern.user_id === decoded || decoded === 1) {
-    Patterns.remove(id)
-      .then((pattern) => {
-        res.status(204).json(pattern);
-      })
-      .catch((err) => {
-        res.status(500).json(err);
-      });
-  } else {
-    res.status(401).json({ message: "Unauthorized Action." });
-  }
+router.delete("/:id", verifyPatternOwner, (req, res) => {
+  Patterns.remove(req.params.id)
+    .then(() => {
+      res.status(204).end();
+    })
+    .catch((err) => {
+      res.status(500).json(err);
+    });
 });
 
 // ---------------------- Photos ---------------------- //
@@ -216,6 +194,8 @@ router.delete("/:id/photos/:photoId", verifyPatternOwner, async (req, res) => {
 
 // ---------------------- Custom Middleware ---------------------- //
 
+// Loads the pattern onto req.pattern and requires the requester to be its
+// owner or an admin. Must run after loadCurrentUser (needs req.currentUser).
 async function verifyPatternOwner(req, res, next) {
   try {
     const pattern = await Patterns.findById(req.params.id);
@@ -225,13 +205,16 @@ async function verifyPatternOwner(req, res, next) {
         .json({ message: `Pattern ${req.params.id} not found.` });
     }
 
-    const permittedUser = req.decodedToken.subject;
-    if (pattern.user_id !== permittedUser && permittedUser !== 1) {
+    if (
+      pattern.user_id !== req.currentUser.id &&
+      req.currentUser.role !== "admin"
+    ) {
       return res
         .status(401)
-        .json({ message: "Not authorized to modify this pattern." });
+        .json({ message: "Not authorized to access this pattern." });
     }
 
+    req.pattern = pattern;
     next();
   } catch (err) {
     console.error("Pattern ownership check failed:", err);

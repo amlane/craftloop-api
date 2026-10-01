@@ -21,13 +21,19 @@ describe("POST /api/auth/register", () => {
   it("creates a user and returns a token without leaking the hash", async () => {
     const res = await request(server)
       .post("/api/auth/register")
-      .send({ username: "alice", password: "s3cret!" });
+      .send({
+        username: "alice",
+        password: "s3cret!",
+        email: "alice@example.com",
+      });
 
     expect(res.status).toBe(201);
     expect(res.body.token).toBeTypeOf("string");
     expect(res.body.user).toEqual({
       id: expect.any(Number),
       username: "alice",
+      email: "alice@example.com",
+      role: "user",
     });
     expect(res.body.user).not.toHaveProperty("password");
   });
@@ -43,11 +49,19 @@ describe("POST /api/auth/register", () => {
   it("rejects a duplicate username", async () => {
     await request(server)
       .post("/api/auth/register")
-      .send({ username: "bob", password: "pw123456" });
+      .send({
+        username: "bob",
+        password: "pw123456",
+        email: "bob@example.com",
+      });
 
     const res = await request(server)
       .post("/api/auth/register")
-      .send({ username: "bob", password: "pw123456" });
+      .send({
+        username: "bob",
+        password: "pw123456",
+        email: "bob2@example.com",
+      });
 
     expect(res.status).toBe(409);
   });
@@ -57,7 +71,11 @@ describe("POST /api/auth/login", () => {
   it("logs in with valid credentials", async () => {
     await request(server)
       .post("/api/auth/register")
-      .send({ username: "carol", password: "pw123456" });
+      .send({
+        username: "carol",
+        password: "pw123456",
+        email: "carol@example.com",
+      });
 
     const res = await request(server)
       .post("/api/auth/login")
@@ -70,7 +88,11 @@ describe("POST /api/auth/login", () => {
   it("rejects a wrong password", async () => {
     await request(server)
       .post("/api/auth/register")
-      .send({ username: "dave", password: "pw123456" });
+      .send({
+        username: "dave",
+        password: "pw123456",
+        email: "dave@example.com",
+      });
 
     const res = await request(server)
       .post("/api/auth/login")
@@ -93,10 +115,31 @@ describe("GET /api/users (restricted)", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns users (no password) with a valid Bearer token", async () => {
+  it("403s for a non-admin user", async () => {
     const reg = await request(server)
       .post("/api/auth/register")
-      .send({ username: "erin", password: "pw123456" });
+      .send({
+        username: "erin",
+        password: "pw123456",
+        email: "erin@example.com",
+      });
+
+    const res = await request(server)
+      .get("/api/users")
+      .set("Authorization", `Bearer ${reg.body.token}`);
+
+    expect(res.status).toBe(403);
+  });
+
+  it("returns users (no password) for an admin", async () => {
+    const reg = await request(server)
+      .post("/api/auth/register")
+      .send({
+        username: "erin",
+        password: "pw123456",
+        email: "erin@example.com",
+      });
+    await db("users").where({ username: "erin" }).update({ role: "admin" });
 
     const res = await request(server)
       .get("/api/users")
@@ -110,10 +153,14 @@ describe("GET /api/users (restricted)", () => {
   it("also accepts a raw token without the Bearer prefix", async () => {
     const reg = await request(server)
       .post("/api/auth/register")
-      .send({ username: "frank", password: "pw123456" });
+      .send({
+        username: "frank",
+        password: "pw123456",
+        email: "frank@example.com",
+      });
 
     const res = await request(server)
-      .get("/api/users")
+      .get("/api/users/me")
       .set("Authorization", reg.body.token);
 
     expect(res.status).toBe(200);

@@ -7,11 +7,13 @@ module.exports = {
   findBy,
   findById,
   getPatternsByUserId,
+  updateRole,
 };
 
-// Public listing — never expose the password hash.
+// Admin-only listing (see requireAdmin on GET /) — never expose the
+// password hash.
 function find() {
-  return db("users").select("id", "username", "email");
+  return db("users").select("id", "username", "email", "role");
 }
 
 // Used for auth; returns the full row including the password hash.
@@ -27,7 +29,10 @@ async function add(user) {
 }
 
 function findById(id) {
-  return db("users").where({ id }).select("id", "username", "email").first();
+  return db("users")
+    .where({ id })
+    .select("id", "username", "email", "role")
+    .first();
 }
 
 async function getPatternsByUserId(id) {
@@ -35,4 +40,9 @@ async function getPatternsByUserId(id) {
   return Patterns.attachChildren(patterns);
 }
 
-// TO DO: Delete/Update user account
+async function updateRole(id, role) {
+  await db("users").where({ id }).update({ role });
+  return findById(id);
+}
+
+// TO DO: Delete/Update user account (password change, account deletion)

@@ -8,6 +8,7 @@ exports.seed = async function (knex) {
       email: "twelvexstring@gmail.com",
       username: "amanda",
       password: bcrypt.hashSync("123", 12),
+      role: "admin",
     },
     {
       email: "heyhermano@gmail.com",
